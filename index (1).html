@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            justify-content: center;
+            margin: 20px auto;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            cursor: pointer;
+            background-color: #f1f1f1;
+        }
+        .taken {
+            pointer-events: none;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #status {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Tic-Tac-Toe</h2>
+    <p id="status">Choose a Mode</p>
+    <button id="singlePlayer">Play vs Computer</button>
+    <button id="twoPlayer">Play with Friend</button>
+    <button id="reset" style="display:none;">Restart Game</button>
+    <div id="board"></div>
+
+    <script>
+        const board = document.getElementById("board");
+        const statusText = document.getElementById("status");
+        const resetButton = document.getElementById("reset");
+        const singlePlayerButton = document.getElementById("singlePlayer");
+        const twoPlayerButton = document.getElementById("twoPlayer");
+
+        const clickSound = new Audio("click.wav");  // Add the sound file
+        const winSound = new Audio("win.wav");      // Add the sound file
+        const drawSound = new Audio("draw.wav");    // Add the sound file
+
+        let cells = Array(9).fill(null);
+        let currentPlayer = "X";
+        let gameActive = false;
+        let isSinglePlayer = false; // Checking the mode
+
+        function startGame(singlePlayer) {
+            isSinglePlayer = singlePlayer;
+            gameActive = true;
+            currentPlayer = "X";
+            statusText.innerText = "Player X's Turn";
+            resetButton.style.display = "inline-block";
+            singlePlayerButton.style.display = "none";
+            twoPlayerButton.style.display = "none";
+            board.innerHTML = "";
+            createBoard();
+        }
+
+        singlePlayerButton.addEventListener("click", () => startGame(true));
+        twoPlayerButton.addEventListener("click", () => startGame(false));
+
+        function createBoard() {
+            for (let i = 0; i < 9; i++) {
+                let cell = document.createElement("div");
+                cell.classList.add("cell");
+                cell.addEventListener("click", () => handleClick(i));
+                board.appendChild(cell);
+            }
+        }
+
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            for (const pattern of winPatterns) {
+                const [a, b, c] = pattern;
+                if (cells[a] && cells[a] === cells[b] && cells[a] === cells[c]) {
+                    return cells[a];
+                }
+            }
+            return cells.includes(null) ? null : "Draw";
+        }
+
+        function handleClick(index) {
+            if (!gameActive || cells[index]) return;
+
+            cells[index] = currentPlayer;
+            document.getElementsByClassName("cell")[index].innerText = currentPlayer;
+            document.getElementsByClassName("cell")[index].classList.add("taken");
+            clickSound.play();
+
+            let winner = checkWinner();
+            if (winner) {
+                endGame(winner);
+                return;
+            }
+
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            statusText.innerText = `Player ${currentPlayer}'s Turn`;
+
+            if (isSinglePlayer && currentPlayer === "O") {
+                setTimeout(computerMove, 500);
+            }
+        }
+
+        function computerMove() {
+            if (!gameActive) return;
+
+            let bestMove = getBestMove();
+            cells[bestMove] = "O";
+            document.getElementsByClassName("cell")[bestMove].innerText = "O";
+            document.getElementsByClassName("cell")[bestMove].classList.add("taken");
+            clickSound.play();
+
+            let winner = checkWinner();
+            if (winner) {
+                endGame(winner);
+                return;
+            }
+
+            currentPlayer = "X";
+            statusText.innerText = "Your Turn";
+        }
+
+        function getBestMove() {
+            let availableMoves = cells.map((cell, index) => (cell === null ? index : null)).filter(index => index !== null);
+
+            for (let move of availableMoves) {
+                cells[move] = "O";
+                if (checkWinner() === "O") {
+                    cells[move] = null;
+                    return move;
+                }
+                cells[move] = null;
+            }
+
+            for (let move of availableMoves) {
+                cells[move] = "X";
+                if (checkWinner() === "X") {
+                    cells[move] = null;
+                    return move;
+                }
+                cells[move] = null;
+            }
+
+            if (availableMoves.includes(4)) return 4;
+            return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+        }
+
+        function endGame(winner) {
+            gameActive = false;
+            if (winner === "Draw") {
+                statusText.innerText = "It's a Draw!";
+                drawSound.play();
+            } else {
+                statusText.innerText = winner === "X" ? "Player X Wins! 🎉" : isSinglePlayer ? "Computer Wins! 🤖" : "Player O Wins! 🎉";
+                winSound.play();
+            }
+        }
+
+        resetButton.addEventListener("click", () => {
+            cells.fill(null);
+            gameActive = false;
+            statusText.innerText = "Choose a Mode";
+            board.innerHTML = "";
+            resetButton.style.display = "none";
+            singlePlayerButton.style.display = "inline-block";
+            twoPlayerButton.style.display = "inline-block";
+        });
+    </script>
+
+</body>
+</html>
